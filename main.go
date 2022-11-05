@@ -17,8 +17,12 @@ func main() {
 
 	listenAddr := flag.String("listen-addr", fmt.Sprintf(":%s", listenPort),
 		"Address on which to listen for HTTP requests")
-	saveDir := flag.String("save-dir", "./requests/", "Root directory to save request bodies to")
+	saveDir := flag.String("save-dir", "", "Root directory to save request bodies to")
 	flag.Parse()
+
+	if *saveDir == "" {
+		*saveDir = os.Getenv("NOMAD_TASK_DIR")
+	}
 
 	os.MkdirAll(*saveDir, os.ModePerm)
 
