@@ -28,11 +28,13 @@ func main() {
 
 	log.Printf("Saving to %s, listening on %s", *saveDir, *listenAddr)
 	http.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
-		f, err := os.Create(path.Join(*saveDir, fmt.Sprintf("%s.txt", r.URL.Path[1:])))
-		if err == nil {
-			r.Write(f)
+		if r.Method == "POST" {
+			f, err := os.Create(path.Join(*saveDir, fmt.Sprintf("%s.txt", r.URL.Path[1:])))
+			if err == nil {
+				r.Write(f)
+			}
+			defer f.Close()
 		}
-		defer f.Close()
 		rw.WriteHeader(204)
 	})
 
