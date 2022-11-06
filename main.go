@@ -94,15 +94,19 @@ func main() {
 						f.Write([]byte(fmt.Sprintf("Error: %s", err.Error())))
 						log.Printf("Error: %s", err.Error())
 					} else {
-						f.Write([]byte(fmt.Sprintf("%s:%s", body.Repository.RepoName, body.PushData.Tag)))
-						log.Printf("Written: %s:%s", body.Repository.RepoName, body.PushData.Tag)
+						if body.PushData.Tag == "latest" {
+							log.Printf("Ignoring latest tag")
+						} else {
+							f.Write([]byte(fmt.Sprintf("%s:%s", body.Repository.RepoName, body.PushData.Tag)))
+							log.Printf("Written: %s:%s", body.Repository.RepoName, body.PushData.Tag)
 
-						p := &consul.KVPair{Key: fmt.Sprintf("configs/%s/IMAGE_TAG", body.Repository.RepoName), Value: []byte(body.PushData.Tag)}
-						_, err = kv.Put(p, nil)
-						if err != nil {
-							f.Write([]byte(fmt.Sprintf("Error writing to consul: %s", err.Error())))
-							log.Printf("Error: %s", err.Error())
-						}					
+							p := &consul.KVPair{Key: fmt.Sprintf("configs/%s/IMAGE_TAG", body.Repository.RepoName), Value: []byte(body.PushData.Tag)}
+							_, err = kv.Put(p, nil)
+							if err != nil {
+								f.Write([]byte(fmt.Sprintf("Error writing to consul: %s", err.Error())))
+								log.Printf("Error: %s", err.Error())
+							}
+						}
 					}
 				}
 				rw.WriteHeader(204)
