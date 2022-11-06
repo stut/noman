@@ -56,7 +56,8 @@ func main() {
 	if *saveDir == "" {
 		*saveDir = os.Getenv("NOMAD_TASK_DIR")
 		if len(*saveDir) == 0 {
-			*saveDir = "./requests/"
+			wd, _ := os.Getwd()
+			*saveDir = fmt.Sprintf("%s/requests/", wd)
 		}
 	}
 
@@ -64,18 +65,23 @@ func main() {
 
 	log.Printf("Saving to %s, listening on %s", *saveDir, *listenAddr)
 	http.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
+		log.Printf("Received %s %s", r.Method, r.URL)
 		if r.Method == "POST" {
 			p := path.Clean(path.Join(*saveDir, fmt.Sprintf("%s.txt", r.URL.Path[1:])))
+			log.Printf("Writing to %s", p)
 			if strings.HasPrefix(p, *saveDir) {
 				f, err := os.Create(p)
 				if err == nil {
 					defer f.Close()
+
 					var body WebhookBody
-					err := json.NewDecoder(r.Body).Decode(&body)
+					err = json.NewDecoder(r.Body).Decode(&body)
 					if err != nil {
-						f.Write([]byte(err.Error()))
+						f.Write([]byte(fmt.Sprintf("Error: %s", err.Error())))
+						log.Printf("Error: %s", err.Error())
 					} else {
 						f.Write([]byte(fmt.Sprintf("%s:%s", body.Repository.RepoName, body.PushData.Tag)))
+						log.Printf("Written: %s:%s", body.Repository.RepoName, body.PushData.Tag)
 					}
 				}
 				rw.WriteHeader(204)
