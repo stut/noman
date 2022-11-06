@@ -9,6 +9,8 @@ import (
 	"os"
 	"path"
 	"strings"
+
+	consul "github.com/hashicorp/consul/api"
 )
 
 type WebhookPushData struct {
@@ -61,6 +63,13 @@ func main() {
 		}
 	}
 
+	consulClient, err := consul.NewClient(consul.DefaultConfig())
+	if err != nil {
+		panic(err)
+	}
+
+	kv := consulClient.KV()
+
 	os.MkdirAll(*saveDir, os.ModePerm)
 
 	log.Printf("Saving to %s, listening on %s", *saveDir, *listenAddr)
@@ -87,6 +96,13 @@ func main() {
 					} else {
 						f.Write([]byte(fmt.Sprintf("%s:%s", body.Repository.RepoName, body.PushData.Tag)))
 						log.Printf("Written: %s:%s", body.Repository.RepoName, body.PushData.Tag)
+
+						p := &consul.KVPair{Key: fmt.Sprintf("configs/%s/IMAGE_TAG", body.Repository.RepoName), Value: []byte(body.PushData.Tag)}
+						_, err = kv.Put(p, nil)
+						if err != nil {
+							f.Write([]byte(fmt.Sprintf("Error writing to consul: %s", err.Error())))
+							log.Printf("Error: %s", err.Error())
+						}					
 					}
 				}
 				rw.WriteHeader(204)
