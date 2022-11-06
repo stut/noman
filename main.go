@@ -65,6 +65,11 @@ func main() {
 
 	log.Printf("Saving to %s, listening on %s", *saveDir, *listenAddr)
 	http.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+				rw.WriteHeader(204)
+				return
+		}
+
 		log.Printf("Received %s %s", r.Method, r.URL)
 		if r.Method == "POST" {
 			p := path.Clean(path.Join(*saveDir, fmt.Sprintf("%s.txt", r.URL.Path[1:])))
